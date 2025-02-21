@@ -4,6 +4,7 @@ import zipfile
 import requests
 from dotenv import load_dotenv
 import uuid
+import re
 
 # Load API key
 load_dotenv()
@@ -14,24 +15,48 @@ shapes = []
 lines = []
 
 ### 🚀 Create a Shape Dynamically ###
+
+
+# Standard color name to hex mapping
+COLOR_MAP = {
+    "red": "#FF0000",
+    "blue": "#0000FF",
+    "green": "#00FF00",
+    "yellow": "#FFFF00",
+    "black": "#000000",
+    "white": "#FFFFFF",
+    "gray": "#808080",
+    "purple": "#800080",
+    "cyan": "#00FFFF",
+    "magenta": "#FF00FF"
+}
+
+def validate_hex_color(color):
+    """Ensure the color is in a valid hex format or convert color names to hex."""
+    hex_pattern = r'^#(?:[0-9a-fA-F]{3,4}){1,2}$'
+
+    # If color is a named color, convert it to hex
+    if color.lower() in COLOR_MAP:
+        return COLOR_MAP[color.lower()]
+
+    # Check if color is a valid hex code
+    if re.match(hex_pattern, color):
+        return color
+
+    # Invalid color → Default to black
+    print(f"⚠️ Invalid color `{color}`. Defaulting to black (#000000).")
+    return "#000000"
+
 def create_shape(name, x, y, shape_type="rectangle", width=200, height=100, color="#00FF00", extra_properties=None):
     """Create a shape with a specified type, position, size, and color."""
     
-    # Ensure the shape type is valid
-    valid_shapes = {
-        "rectangle", "circle", "cloud", "cross", "diamond", "doubleArrow", 
-        "flexiblePolygon", "hexagon", "isoscelesTriangle", "octagon", 
-        "pentagon", "polyStar", "rightTriangle", "singleArrow"
-    }
-
-    if shape_type not in valid_shapes:
-        raise ValueError(f"❌ Invalid shape type: {shape_type}. Must be one of {valid_shapes}.")
+    color = validate_hex_color(color)  # ✅ Fix color before using it
 
     shape_id = f"shape_{uuid.uuid4().hex[:8]}"  # Unique ID
 
     shape = {
         "id": shape_id,
-        "type": shape_type,  # ✅ Shape type is dynamic
+        "type": shape_type,  
         "boundingBox": {"x": x, "y": y, "w": width, "h": height},
         "style": {
             "fill": {"type": "color", "color": color},
@@ -46,6 +71,8 @@ def create_shape(name, x, y, shape_type="rectangle", width=200, height=100, colo
 
     shapes.append(shape)  # Store the shape
     return shape_id  # Return shape ID for reference
+
+
 
 
 
