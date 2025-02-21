@@ -22,19 +22,22 @@ def generate_main_function(description):
     """Ask OpenAI to generate a main function that builds an ERD/DFD using functions from script.py."""
     system_prompt = f"""
     You are an assistant that generates a Python `main()` function to create an Entity-Relationship Diagram (ERD) and Data Flow Diagram (DFD).
+    The problem description may be vague. Ensure to think through all possible entities and flows to create a robust, comprehensive DFD and ERD.
     
     You have access to the following functions defined in `script.py`:
 
     {script_code}
 
     Use these functions correctly to:
+    - Add the necessary imports including from script import *
     - Create shapes for entities (use `create_shape`).
     - Define relationships using `create_line`.
     - Generate the Lucidchart JSON (`generate_lucidchart_json`).
     - Upload the diagram to Lucidchart (`import_to_lucidchart`).
     - At the end, **print the Lucidchart link** using the document ID. The main file should also directly open the link on the browser using the webbrowser module.
     - The script contains a sample main file that you can use as reference as to how the functions can be called.
-    - Make sure to add the necessary imports including from script import *
+    - ** Make sure to add the necessary imports including from script import * **
+    - * Make sure that all functions you are using from script.py are imported and named correctly *
 
     **Return only valid Python code** for the `main()` function. Do not include explanations. Do not include ``` Python, etc.
     """

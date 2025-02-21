@@ -1,8 +1,0 @@
-Problem Statement: University Course Registration System
-A university needs a Course Registration System to manage students, faculty, and course enrollment.
-
-Students must be able to register for courses, view their enrollment status, and drop courses if needed.
-Faculty members are responsible for teaching courses, viewing enrolled students, and assigning grades.
-The system should ensure that students meet prerequisites before enrolling in a course.
-A course catalog should be maintained, listing available courses, faculty assignments, and schedules.
-The Registrar’s Office must be able to generate reports on student enrollment, faculty workload, and course availability.
