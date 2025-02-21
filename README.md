@@ -56,7 +56,3 @@ The initial diagram layout is automated but may need manual adjustments in Lucid
 - Adjust table column widths
 - Modify relationships for clearer connections
 - Add additional styling or annotations
-
-## License
-
-MIT License
