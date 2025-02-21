@@ -117,12 +117,196 @@ def create_container(name, x, y, container_type="rectangleContainer", width=400,
     return container_id  # Return the container ID for reference
 
 
+def create_flowchart_element(name, x, y, flowchart_type="process", width=200, height=100, color="#ADD8E6", extra_properties=None):
+    """
+    Create a flowchart element with specified type, position, size, and color.
+
+    Supported flowchart types:
+    - "braceNote"
+    - "connector"
+    - "database"
+    - "data"
+    - "decision"
+    - "delay"
+    - "display"
+    - "document"
+    - "manualInput"
+    - "manualOperation"
+    - "merge"
+    - "process"
+    - "storedData"
+    - "terminator"
+    """
+
+    valid_flowchart_types = {
+        "braceNote", "connector", "database", "data", "decision", "delay", 
+        "display", "document", "manualInput", "manualOperation", "merge", 
+        "process", "storedData", "terminator"
+    }
+
+    if flowchart_type not in valid_flowchart_types:
+        raise ValueError(f"❌ Invalid flowchart type: {flowchart_type}. Must be one of {valid_flowchart_types}.")
+
+    element_id = f"flowchart_{uuid.uuid4().hex[:8]}"  # Generate a unique ID
+
+    flowchart_element = {
+        "id": element_id,
+        "type": flowchart_type,
+        "boundingBox": {"x": x, "y": y, "w": width, "h": height},
+        "style": {
+            "fill": {"type": "color", "color": color},
+            "stroke": {"color": "#000000", "width": 1, "style": "solid"}
+        },
+        "text": name
+    }
+
+    # Handle special cases like Brace Note
+    if flowchart_type == "braceNote":
+        flowchart_element["rightFacing"] = False  # Default to left-facing
+        flowchart_element["braceWidth"] = 60  # Default width
+
+    # Add extra properties if needed
+    if extra_properties:
+        flowchart_element.update(extra_properties)
+
+    shapes.append(flowchart_element)  # Store the flowchart element
+    return element_id  # Return the ID for reference
+
+
+def create_table(name, x, y, rows=3, cols=2, width=300, height=200, color="#FFFFFF", cell_data=None):
+    """
+    Create a valid square table by adding extra cells to make `rows == cols`.
+    """
+
+    # 🔥 Force square table (make rows = cols by adding empty cells)
+    max_dim = max(rows, cols)  # Find the larger dimension
+    rows, cols = max_dim, max_dim  # Force table to be square
+
+    table_id = f"table_{uuid.uuid4().hex[:8]}"  # Unique ID
+
+    table = {
+        "id": table_id,
+        "type": "table",
+        "boundingBox": {"x": x, "y": y, "w": width, "h": height},
+        "style": {
+            "fill": {"type": "color", "color": color},
+            "stroke": {"color": "#000000", "width": 1, "style": "solid"}
+        },
+        "rowCount": rows,
+        "colCount": cols,
+        "cells": [],
+        "verticalBorder": True,
+        "horizontalBorder": True
+    }
+
+    # ✅ Populate table cells
+    for r in range(rows):
+        for c in range(cols):
+            cell_text = ""
+            cell_color = "#FFFFFF"
+            merge_right = 0
+            merge_down = 0
+
+            if cell_data:
+                for cell in cell_data:
+                    if cell["x"] == c and cell["y"] == r:
+                        cell_text = cell.get("text", "")
+                        cell_color = cell.get("color", "#FFFFFF")
+                        merge_right = cell.get("merge_right", 0)
+                        merge_down = cell.get("merge_down", 0)
+                        break
+
+            # ✅ If cell is outside original dimensions, make it "hidden"
+            if c >= cols or r >= rows:
+                cell_text = ""
+                merge_right = 0
+                merge_down = 0
+
+            table["cells"].append({
+                "xPosition": c,
+                "yPosition": r,
+                "mergeCellsRight": merge_right,
+                "mergeCellsDown": merge_down,
+                "text": cell_text,
+                "style": {"fill": {"type": "color", "color": cell_color}}
+            })
+
+    shapes.append(table)  # Store table
+    return table_id  # Return the table ID
+
+
+def create_standard_shape(shape_type, name, x, y, width=200, height=100, text=None, image_url=None, color="#FFFFFF"):
+    """
+    Create a standard shape from Lucidchart's standard library.
+    
+    - `shape_type`: Type of shape (rectangle, text, hotspot, image, stickyNote)
+    - `text`: For text-based shapes
+    - `image_url`: URL for images (if using an image block)
+    """
+    shape_id = f"shape_{uuid.uuid4().hex[:8]}"  # Unique ID
+
+    shape = {
+        "id": shape_id,
+        "type": shape_type,
+        "boundingBox": {"x": x, "y": y, "w": width, "h": height}
+    }
+
+    # ✅ Handle Specific Shape Properties
+    if shape_type in ["rectangle", "stickyNote"]:
+        shape["style"] = {
+            "fill": {"type": "color", "color": color},
+            "stroke": {"color": "#000000", "width": 1, "style": "solid"}
+        }
+        shape["text"] = text if text else name
+
+    elif shape_type == "text":
+        shape["text"] = text if text else name  # Text Blocks don't support styles
+
+    elif shape_type == "hotspot":
+        shape["style"] = {"stroke": {"color": "#000000", "width": 1, "style": "solid"}}  # No text
+
+    elif shape_type == "image":
+        shape["stroke"] = {"color": "#000000", "width": 1, "style": "solid"}
+        shape["image"] = {"type": "image", "url": image_url}  # Must pass image_url
+
+    shapes.append(shape)  # Store the shape
+    return shape_id  # Return the shape ID for reference
+
+
+def create_entity(name, attributes, x, y):
+    """
+    Auto-generates an entity table with attributes.
+    
+    - `name`: Entity name (e.g., "Users")
+    - `attributes`: List of tuples [(name, is_primary_key), ...]
+    - `x, y`: Position on the canvas
+    """
+
+    # Auto-calculate rows (1 extra row for the header)
+    rows = len(attributes) + 1
+    cols = 2  # First column = Attribute Name, Second column = PK indicator
+
+    cell_data = []
+
+    # ✅ Add Header Row
+    cell_data.append({"x": 0, "y": 0, "text": name, "color": "#4682B4"})  # Table title
+    cell_data.append({"x": 1, "y": 0, "text": "PK?", "color": "#4682B4"})  # PK Column Header
+
+    # ✅ Add Attributes
+    for index, (attr_name, is_primary_key) in enumerate(attributes):
+        row = index + 1  # Offset by 1 because of the header
+        cell_data.append({"x": 0, "y": row, "text": attr_name})  # Attribute Name
+        cell_data.append({"x": 1, "y": row, "text": "✔" if is_primary_key else ""})  # PK Indicator
+
+    return create_table(name, x, y, rows=rows, cols=2, cell_data=cell_data)
+
+
 
 ### 🚀 Create a Line Dynamically ###
-def create_line(shape1_id, shape2_id, relationship="relationship", line_type="one-to-one"):
-    line_id = f"line_{uuid.uuid4().hex[:8]}"  # ✅ Truncate UUID to 8 characters
+def create_line(shape1_id, shape2_id, relationship="relationship", line_type="one-to-one", 
+                start_side="right", end_side="left", text_position=0.5, text_side="top"):
+    line_id = f"line_{uuid.uuid4().hex[:8]}"  
 
-    # Define line endings based on type
     endpoint_styles = {
         "one-to-one": ("one", "one"),
         "one-to-many": ("one", "many"),
@@ -139,13 +323,13 @@ def create_line(shape1_id, shape2_id, relationship="relationship", line_type="on
             "type": "shapeEndpoint",
             "style": start_style,
             "shapeId": shape1_id,
-            "position": {"x": 1, "y": 0.5}
+            "position": get_endpoint_position(start_side)
         },
         "endpoint2": {
             "type": "shapeEndpoint",
             "style": end_style,
             "shapeId": shape2_id,
-            "position": {"x": 0, "y": 0.5}
+            "position": get_endpoint_position(end_side)
         },
         "stroke": {
             "color": "#000000",
@@ -155,13 +339,24 @@ def create_line(shape1_id, shape2_id, relationship="relationship", line_type="on
         "text": [
             {
                 "text": relationship,
-                "position": 0.5,
-                "side": "middle"
+                "position": text_position,  # Stagger text placement
+                "side": text_side           # Adjust text side
             }
         ]
     }
     lines.append(line)
     return line_id
+
+def get_endpoint_position(side):
+    """Helper function to return relative positions for endpoints."""
+    positions = {
+        "right": {"x": 1, "y": 0.5},
+        "left": {"x": 0, "y": 0.5},
+        "top": {"x": 0.5, "y": 0},
+        "bottom": {"x": 0.5, "y": 1}
+    }
+    return positions.get(side, {"x": 1, "y": 0.5})  # Default to right
+
 
 
 ### 🚀 Generate Lucidchart JSON ###
@@ -217,29 +412,60 @@ def import_to_lucidchart():
 
 
 def main():
-    print("🛠️ Creating dynamic containers and relationships...")
+    print("🛠️ Generating Data Flow Diagram (DFD) and Entity Relationship Diagram (ERD)...")
 
-    # ✅ Create Various Containers
-    container1 = create_container("Main Group", x=50, y=50, container_type="rectangleContainer", color="#B0E0E6")
-    container2 = create_container("Feature Set", x=500, y=50, container_type="roundedRectangleContainer", color="#FFD700")
-    container3 = create_container("Validation", x=50, y=300, container_type="diamondContainer", color="#FF6347")
-    container4 = create_container("Approval Process", x=500, y=300, container_type="pillContainer", color="#90EE90")
+    # ✅ **STEP 1: CREATE DATA FLOW DIAGRAM (DFD)**
+    # External Entities
+    customer = create_flowchart_element("Customer", x=100, y=100, flowchart_type="terminator")
+    system = create_flowchart_element("Ordering System", x=400, y=100, flowchart_type="process")
+    database = create_flowchart_element("Orders DB", x=700, y=100, flowchart_type="database")
 
-    # ✅ Create Swim Lane Container (Special)
-    swimlane = create_container("Workflow", x=100, y=500, container_type="swimLanes", width=600, height=300,
-                                extra_properties={"vertical": True})
+    # Data Flow Lines
+    create_line(customer, system, "Places Order", "one-to-one", start_side="right", end_side="left")
+    create_line(system, database, "Saves Order", "one-to-one", start_side="right", end_side="left")
+    create_line(database, system, "Retrieves Order Info", "one-to-one", start_side="left", end_side="right")
+    create_line(system, customer, "Sends Confirmation", "one-to-one", start_side="left", end_side="right")
 
-    # ✅ Create Relationships Between Containers
-    create_line(container1, container2, relationship="includes", line_type="one-to-many")
-    create_line(container2, container3, relationship="requires", line_type="one-to-one")
-    create_line(container3, container4, relationship="validates", line_type="many-to-one")
-    create_line(container4, swimlane, relationship="flows into", line_type="many-to-many")
+    # ✅ **STEP 2: CREATE ENTITY RELATIONSHIP DIAGRAM (ERD)**
+    # Entities (Tables)
+    users_table = create_entity("Users", [
+        ("UserID", True),  # Primary Key
+        ("Name", False),
+        ("Email", False),
+        ("CreatedAt", False)
+    ], x=100, y=300)
 
-    # ✅ Import to Lucidchart
+    orders_table = create_entity("Orders", [
+        ("OrderID", True),  # Primary Key
+        ("UserID", False),
+        ("TotalAmount", False),
+        ("OrderDate", False)
+    ], x=400, y=300)
+
+    products_table = create_entity("Products", [
+        ("ProductID", True),  # Primary Key
+        ("ProductName", False),
+        ("Price", False)
+    ], x=700, y=300)
+
+    order_items_table = create_entity("OrderItems", [
+        ("OrderItemID", True),  # Primary Key
+        ("OrderID", False),
+        ("ProductID", False),
+        ("Quantity", False)
+    ], x=400, y=500)
+
+    # Relationships (Crow's Foot Notation)
+    create_line(users_table, orders_table, "places", "one-to-many", start_side="right", end_side="left")  # One User places Many Orders
+    create_line(orders_table, order_items_table, "contains", "one-to-many", start_side="bottom", end_side="top")  # One Order contains Many OrderItems
+    create_line(products_table, order_items_table, "included in", "one-to-many", start_side="bottom", end_side="top")  # One Product is included in Many OrderItems
+
+    # ✅ **STEP 3: IMPORT TO LUCIDCHART**
     document_id = import_to_lucidchart()
-    
+
     if document_id:
-        print(f"🌍 Open the Lucidchart document: https://lucid.app/lucidchart/{document_id}/edit")
+        print(f"🌍 Open the Lucidchart DFD + ERD: https://lucid.app/lucidchart/{document_id}/edit")
 
 if __name__ == "__main__":
     main()
+
