@@ -1,9 +1,13 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
 
-api_key = 'api-key'
+# Load API key from .env file
+load_dotenv()
+LUCIDCHART_API_KEY = os.getenv("LUCIDCHART_API_KEY")
 headers = {
-    'Authorization': f'Bearer {api_key}',
+    'Authorization': f'Bearer {LUCIDCHART_API_KEY}',
     'Content-Type': 'application/json'
 }
 
