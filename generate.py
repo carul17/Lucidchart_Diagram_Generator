@@ -32,7 +32,7 @@ def generate_main_function(description):
     - Define relationships using `create_line`.
     - Generate the Lucidchart JSON (`generate_lucidchart_json`).
     - Upload the diagram to Lucidchart (`import_to_lucidchart`).
-    - At the end, **print the Lucidchart link** using the document ID.
+    - At the end, **print the Lucidchart link** using the document ID. The main file should also directly open the link on the browser using the webbrowser module.
     - The script contains a sample main file that you can use as reference as to how the functions can be called.
     - Make sure to add the necessary imports including from script import *
 
